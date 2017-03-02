@@ -1,0 +1,52 @@
+from skybeard.beards import BeardChatHandler
+from skybeard.utils import get_args
+from skybeard.decorators import onerror
+from skybeard.predicates import regex_predicate
+
+from pathlib import Path
+
+from . import xkcd
+
+
+class XkcdBeard(BeardChatHandler):
+
+    __userhelp__ = """A simple xkcd beard."""
+
+    __commands__ = [
+        # command, callback coro, help text
+        ("searchxkcd", 'search_xkcd', 'Echos command and args'),
+        (regex_predicate("_test"), "_test_photo_sending", None)
+    ]
+
+    xkcd_cache_maker = xkcd.get_latest()
+
+    # __init__ is implicit
+
+    @onerror
+    async def search_xkcd(self, msg):
+        args = get_args(msg)
+
+        try:
+            xkcd.get_specific(args[0])
+        except IndexError:
+            self.sender.sendMessage("No issue number provided?")
+            return
+
+        archive_path = Path('./xkcd_archive/{}'.format(args[0])).resolve()
+        photo_filenames = [
+            *archive_path.glob("*.png"),
+            *archive_path.glob("*.jpeg"),
+            *archive_path.glob("*.jpg"),
+        ]
+        print(photo_filenames)
+
+        assert len(photo_filenames) == 1
+
+        with open(str(photo_filenames[0]), "rb") as f:
+            await self.sender.sendPhoto(f)
+
+    @onerror
+    async def _test_photo_sending(self, msg):
+        path = Path(
+            "/home/nasfarley88/git/skybeard-2/xkcd_archive/301/Limerick.png")
+        await self.sender.sendPhoto(path.open("w+"))
