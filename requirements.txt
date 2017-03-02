@@ -1,2 +1,2 @@
-xkcd-dl
 ftfy
+hypothesis<=3.6.1
